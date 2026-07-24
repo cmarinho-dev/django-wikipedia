@@ -4,6 +4,7 @@ from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django import forms
 from . import util
+import markdown2
 
 class NewWikiForm(forms.Form):
     title = forms.CharField(label="Wiki title", min_length=2, widget=forms.TextInput(attrs={
@@ -40,7 +41,8 @@ def get_wiki(request, wiki_name):
     
     return render(request, "encyclopedia/get_wiki.html", {
         "wiki_name": wiki_name,
-        "wiki": util.get_entry(wiki_name)
+        "wiki": markdown2.markdown(util.get_entry(wiki_name)),
+        "upd_link": f"/wiki/edit/{wiki_name}"
     })
 
 def add_wiki(request):
@@ -63,17 +65,19 @@ def add_wiki(request):
         
         else:
             return render(request, "encyclopedia/add_wiki.html", {
-                "form": form
+                "form": form,
+                "error": "Invalid input"
             })
     return render(request, "encyclopedia/add_wiki.html", {
             "form": NewWikiForm(),
-            "error": "Invalid input"
     })
 
-def update_wiki(request):
+def update_wiki(request, wiki_name):
     if request.method == "POST":
+        print("1")
         upd_form = NewWikiForm(request.POST)
         if upd_form.is_valid():
+            print("2")
             data = upd_form.cleaned_data
             title = data["title"]
             content = data["content"]
@@ -82,26 +86,26 @@ def update_wiki(request):
 
             return HttpResponseRedirect(f"/wiki/{title}")
         else:
+            print("3")
             return render(request, "encyclopedia/update_wiki.html", {
-                "form": upd_form
-            })
-    
-    if request.method == "GET" and request.GET.get("wiki_name"):
-        wiki_name = request.GET.get("wiki_name")
-
-        if util.get_entry(wiki_name):
-            wiki_to_update = util.get_entry(wiki_name)
-            title_old = wiki_to_update.
-            content_old =
-
-            upd_form = NewWikiForm(title, content)
-            upd_form.
-
-            return render(request, "encyclopedia/update_wiki.html", {
-                "wiki": wiki_to_update
+                "form": upd_form,
+                "error": "Invalid input"
             })
 
-    return HttpResponseRedirect(reverse("index"))
+    if util.get_entry(wiki_name):
+        print("4")
+        content_old = util.get_entry(wiki_name)
+        title_old = wiki_name
+
+        upd_form = NewWikiForm()
+        upd_form.fields["title"].initial = title_old
+        upd_form.fields["content"].initial = content_old
+
+        return render(request, "encyclopedia/update_wiki.html", {
+            "form": upd_form
+        })
+    print("5")
+    return HttpResponseRedirect(reverse("wiki_not_found"))
 
 def search_wiki(request):
     if request.method == "GET" and request.GET.get("q"):
