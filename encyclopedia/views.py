@@ -74,26 +74,23 @@ def add_wiki(request):
 
 def update_wiki(request, wiki_name):
     if request.method == "POST":
-        print("1")
         upd_form = NewWikiForm(request.POST)
+
         if upd_form.is_valid():
-            print("2")
             data = upd_form.cleaned_data
-            title = data["title"]
+            title = wiki_name
             content = data["content"]
 
             util.save_entry(title, content)
 
             return HttpResponseRedirect(f"/wiki/{title}")
         else:
-            print("3")
             return render(request, "encyclopedia/update_wiki.html", {
                 "form": upd_form,
                 "error": "Invalid input"
             })
 
     if util.get_entry(wiki_name):
-        print("4")
         content_old = util.get_entry(wiki_name)
         title_old = wiki_name
 
@@ -101,10 +98,11 @@ def update_wiki(request, wiki_name):
         upd_form.fields["title"].initial = title_old
         upd_form.fields["content"].initial = content_old
 
+        upd_form.fields["title"].widget.attrs["readonly"] = True
+
         return render(request, "encyclopedia/update_wiki.html", {
             "form": upd_form
         })
-    print("5")
     return HttpResponseRedirect(reverse("wiki_not_found"))
 
 def search_wiki(request):
